@@ -1,0 +1,94 @@
+<!-- index.html
+     Example showing both:
+     1) import from <template> by returning { importFromTmpl: "..." }
+     2) import from URL by returning { importFromUrl: "..." }
+
+     Files in same folder:
+       - index.html
+       - custom-elements.js
+       - synthetic-component.js
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>On-demand Custom Elements Demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 24px; }
+      section { margin: 18px 0; padding: 12px; border: 1px solid #ddd; border-radius: 10px; }
+      code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>On-demand Custom Elements</h1>
+
+    <section>
+      <h2>Template-backed element</h2>
+      <p>
+        This custom element is defined at runtime from a <code>&lt;template&gt;</code>.
+        The template’s first element is treated as the component root and its tag name is registered.
+      </p>
+
+      <!-- The element exists before it is defined -->
+      <my-template-card></my-template-card>
+
+      <!-- Template that defines the element structure -->
+      <template id="tmpl-my-template-card">
+        <my-template-card>
+          <div style="padding:10px;border:1px solid #bbb;border-radius:10px;">
+            <div style="font-weight:600;">Hello from template</div>
+            <div style="margin-top:6px;">Rendered by runtime-generated custom element class.</div>
+          </div>
+        </my-template-card>
+      </template>
+    </section>
+
+    <section>
+      <h2>URL-imported element</h2>
+      <p>
+        This custom element is defined by importing a module URL. The module self-registers.
+      </p>
+
+      <!-- The element exists before it is defined -->
+      <synthetic-component></synthetic-component>
+    </section>
+
+    <script type="module">
+      import {
+        createOnDemandCustomElementsLoader,
+        composeOnDemandCustomElementResolvers,
+        allowMapResolver,
+        attributeTemplateResolver,
+        attributeUrlResolver,
+      } from "./custom-elements.js";
+
+      // Example approach:
+      // - Use an allow-map for explicit control over what loads and from where.
+      // - (Optionally) enable attribute-based overrides for demos/prototyping.
+      const resolver = composeOnDemandCustomElementResolvers(
+        allowMapResolver({
+          // 1) Template-backed
+          "my-template-card": { importFromTmpl: "tmpl-my-template-card" },
+
+          // 2) URL-imported module (self-registering)
+          "synthetic-component": { importFromUrl: "./synthetic-component.js" },
+        }),
+
+        // Optional extras (disabled unless you put attributes on elements)
+        attributeTemplateResolver("data-ce-tmpl"),
+        attributeUrlResolver("data-ce-url"),
+      );
+
+      const loader = createOnDemandCustomElementsLoader({
+        resolver,
+        log: (level, msg, meta) => {
+          const fn = level === "debug" ? "log" : level;
+          console[fn](msg, meta ?? "");
+        },
+      });
+
+      loader.start();
+    </script>
+  </body>
+</html>
